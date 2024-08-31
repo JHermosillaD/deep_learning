@@ -40,9 +40,25 @@ class gradient_descent_family:
             self.y_min_lst.append(y_min)
             self.z_lst.append(z_fun)
             x_grad, y_grad = self.evaluate_gradient(x_min, y_min)
-            x_min = x_min - self.learning_rate*x_grad
-            y_min = y_min - self.learning_rate*y_grad
+            x_min -= self.learning_rate*x_grad
+            y_min -= self.learning_rate*y_grad
     
+    def momentum_gradient_descent(self, rho):
+        vx = 0
+        vy = 0
+        x_min = self.init_x
+        y_min = self.init_y
+        for step in range(int(self.steps)):
+            z_fun = self.evaluate_function(x_min, y_min)
+            self.x_min_lst.append(x_min)
+            self.y_min_lst.append(y_min)
+            self.z_lst.append(z_fun)
+            x_grad, y_grad = self.evaluate_gradient(x_min, y_min)
+            vx = rho * vx + x_grad
+            vy = rho * vy + y_grad
+            x_min -= self.learning_rate*vx
+            y_min -= self.learning_rate*vy
+
     def plot_results(self):
         X, Y = np.meshgrid(self.x, self.y)
         Z = X**2 + Y**2
