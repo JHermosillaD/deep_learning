@@ -79,7 +79,7 @@ class Learning_classrom():
                 if i % 100 == 99:
                     count += 1
                     if (count == 9):
-                        print('epoch: %d loss: %.3f' %(epoch + 1, running_loss/100))
+                        print('epoch: %d trainning loss: %.3f' %(epoch + 1, running_loss/100))
                         x_train.append(epoch)
                         y_train.append(running_loss)
                     running_loss = 0.0
@@ -89,17 +89,23 @@ class Learning_classrom():
     def test(self):
         x_test = []
         y_test = []
-        iteration = 0
         with torch.no_grad():
             for epoch in range(self.epochs):
-                for images, labels in self.model.test_loader:
-                        images = images.to(self.device)
-                        labels = labels.to(self.device)
-                        outputs = self.model(images)
-                        loss = self.loss_func(outputs, labels)
-                x_test.append(iteration)
-                y_test.append(loss.item())
-                iteration += 1
+                running_loss = 0.0
+                count = 0
+                for i, (images, labels) in enumerate(self.model.test_loader):     
+                    images = images.to(self.device)
+                    labels = labels.to(self.device)
+                    outputs = self.model(images)
+                    loss = self.loss_func(outputs, labels)
+                    running_loss += loss.item() 
+                    if i % 100 == 99:
+                        count += 1
+                        if (count == 9):
+                            print('epoch: %d testing loss: %.3f' %(epoch + 1, running_loss/100))
+                            x_test.append(epoch)
+                            y_test.append(running_loss)
+                        running_loss = 0.0
             plt.plot(np.array(x_test), np.array(y_test))
             plt.show()
 
