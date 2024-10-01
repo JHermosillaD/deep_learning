@@ -41,8 +41,7 @@ class LeNet5(nn.Module):
         self.fully_connected1 = nn.Sequential(nn.Flatten(),
                                               nn.Linear(120*1*1, 64),
                                               nn.Tanh())           
-        self.fully_connected2 = nn.Sequential(nn.Linear(64, 10),
-                                              nn.Tanh())                  
+        self.fully_connected2 = nn.Sequential(nn.Linear(64, 10))                  
 
     def forward(self, x):
             out = self.convolution_layer1(x)
