@@ -3,10 +3,10 @@ import torch
 import torch.nn as nn
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-from torchinfo import summary
-from torchmetrics import Accuracy
+import torchvision.utils as utils
 import matplotlib.pyplot as plt
-import numpy as np
+from torchmetrics import Accuracy
+from torchinfo import summary
 
 if torch.cuda.is_available(): 
     dev = "cuda:0"
@@ -64,6 +64,7 @@ class Learning_class():
         self.train_acc_hist = []
         self.test_loss_hist = []
         self.test_acc_hist = []
+        self.history = []
 
     def train(self, history = False):
         for epoch in range(self.epochs):
@@ -106,20 +107,26 @@ class Learning_class():
                 self.train_acc_hist.append(train_acc.tolist())
                 self.test_acc_hist.append(test_acc.tolist())
 
-    def plot_loss(self):
+        self.history.append(self.train_loss_hist)
+        self.history.append(self.test_loss_hist)
+        self.history.append(self.train_acc_hist)
+        self.history.append(self.test_acc_hist)
+        return self.model, self.history
+
+    def plot_loss(self, history):
         plt.figure(figsize=(5, 5))
-        plt.plot(range(1,self.epochs+1),self.train_loss_hist, label='Train', color='red')
-        plt.plot(range(1,self.epochs+1),self.test_loss_hist, label='Test', color='green')
+        plt.plot(range(1,self.epochs+1),history[0], label='Train', color='red')
+        plt.plot(range(1,self.epochs+1),history[1], label='Test', color='green')
         plt.title('Loss history')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         plt.legend()
         plt.show()
 
-    def plot_accuracy(self):
+    def plot_accuracy(self, history):
         plt.figure(figsize=(5, 5))
-        plt.plot(range(1,self.epochs+1),self.train_acc_hist, label='Train', color='red')
-        plt.plot(range(1,self.epochs+1),self.test_acc_hist, label='Test', color='green')
+        plt.plot(range(1,self.epochs+1),history[2], label='Train', color='red')
+        plt.plot(range(1,self.epochs+1),history[3], label='Test', color='green')
         plt.title('Accuracy history')
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
@@ -131,10 +138,19 @@ def main():
     summary(model=model, input_size=(1, 1, 28, 28), col_width=20,
             col_names=['input_size', 'kernel_size', 'output_size'],
             row_settings=['ascii_only'])
+
     learning_model = Learning_class(model)
-    learning_model.train(history=True)
-    learning_model.plot_accuracy()
-    learning_model.plot_loss()
+    trained_model, history = learning_model.train(history=True)
+    learning_model.plot_accuracy(history)
+    learning_model.plot_loss(history)
+
+    kernels3 = trained_model.convolution_layer3[0].weight.detach().clone()
+    kernels3 = kernels3 - kernels3.min()
+    kernels3 = kernels3 / kernels3.max()
+    kernels3,_ = torch.max(kernels3, 1, keepdim=True)
+    filter_img = utils.make_grid(kernels3, nrow = 12)
+    img = transforms.ToPILImage()(filter_img) 
+    img = utils.save_image(filter_img, 'encoder_conv1_filters.png' ,nrow = 12)   
 
 if __name__ == '__main__':
     main()
