@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+from torchinfo import summary
 from torchmetrics import Accuracy
 import matplotlib.pyplot as plt
 import numpy as np
@@ -49,10 +50,10 @@ class LeNet5(nn.Module):
             out = self.fully_connected1(out)
             out = self.fully_connected2(out)
             return out
-    
+
 class Learning_class():
     def __init__(self, model):
-        self.epochs = 10
+        self.epochs = 5
         self.device = torch.device(dev)
         self.model = model.to(self.device)
         self.loss_func = nn.CrossEntropyLoss()
@@ -63,7 +64,6 @@ class Learning_class():
         self.train_acc_hist = []
         self.test_loss_hist = []
         self.test_acc_hist = []
-        self.epochs_hist = []
 
     def train(self, history = False):
         for epoch in range(self.epochs):
@@ -99,23 +99,42 @@ class Learning_class():
                 test_loss /= len(self.model.test_loader)
                 test_acc /= len(self.model.test_loader)
 
-            print(f"Epoch: {epoch+1} Train loss: {train_loss: .5f} Train acc: {train_acc: .5f} Val loss: {test_loss: .5f} Val acc: {test_acc: .5f}")
+            print(f"Epoch: {epoch+1} Train loss: {train_loss: .5f} Train acc: {train_acc: .5f} Test loss: {test_loss: .5f} Test acc: {test_acc: .5f}")
             if (history):
                 self.train_loss_hist.append(train_loss)
-                self.train_acc_hist.append(train_acc)
                 self.test_loss_hist.append(test_loss)
-                self.test_acc_hist.append(test_acc)
-                self.epochs_hist.append(epoch+1)
+                self.train_acc_hist.append(train_acc.tolist())
+                self.test_acc_hist.append(test_acc.tolist())
 
-    def plot_history(self):
-        plt.plot(np.array(self.train_loss_hist), np.array(self.epochs_hist))
-        plt.show()       
+    def plot_loss(self):
+        plt.figure(figsize=(5, 5))
+        plt.plot(range(1,self.epochs+1),self.train_loss_hist, label='Train', color='red')
+        plt.plot(range(1,self.epochs+1),self.test_loss_hist, label='Test', color='green')
+        plt.title('Loss history')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.show()
+
+    def plot_accuracy(self):
+        plt.figure(figsize=(5, 5))
+        plt.plot(range(1,self.epochs+1),self.train_acc_hist, label='Train', color='red')
+        plt.plot(range(1,self.epochs+1),self.test_acc_hist, label='Test', color='green')
+        plt.title('Accuracy history')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.legend()
+        plt.show()
 
 def main():    
     model = LeNet5()
+    summary(model=model, input_size=(1, 1, 28, 28), col_width=20,
+            col_names=['input_size', 'kernel_size', 'output_size'],
+            row_settings=['ascii_only'])
     learning_model = Learning_class(model)
     learning_model.train(history=True)
-    learning_model.plot_history()
+    learning_model.plot_accuracy()
+    learning_model.plot_loss()
 
 if __name__ == '__main__':
     main()
