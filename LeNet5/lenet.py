@@ -7,6 +7,7 @@ import torchvision.utils as utils
 import matplotlib.pyplot as plt
 from torchmetrics import Accuracy
 from torchinfo import summary
+from pathlib import Path
 
 if torch.cuda.is_available(): 
     dev = "cuda:0"
@@ -41,7 +42,8 @@ class LeNet5(nn.Module):
         self.fully_connected1 = nn.Sequential(nn.Flatten(),
                                               nn.Linear(120*1*1, 64),
                                               nn.Tanh())           
-        self.fully_connected2 = nn.Sequential(nn.Linear(64, 10))                  
+        self.fully_connected2 = nn.Sequential(nn.Linear(64, 10),
+                                              nn.Softmax(dim=1))                  
 
     def forward(self, x):
             out = self.convolution_layer1(x)
@@ -53,13 +55,17 @@ class LeNet5(nn.Module):
 
 class Learning_class():
     def __init__(self, model):
-        self.epochs = 5
+        self.epochs = 30
         self.device = torch.device(dev)
         self.model = model.to(self.device)
         self.loss_func = nn.CrossEntropyLoss()
         self.accuracy = Accuracy(task='multiclass', num_classes=10)
         self.accuracy = self.accuracy.to(dev)
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
+        self.model_path = Path("models")
+        self.model_name = "lenet5.pth"
+        self.model_path.mkdir(parents=True, exist_ok=True)
+        self.full_path = self.model_path / self.model_name
         self.train_loss_hist = []
         self.train_acc_hist = []
         self.test_loss_hist = []
@@ -133,6 +139,15 @@ class Learning_class():
         plt.legend()
         plt.show()
 
+    def save_model(self, trained_model):
+        print("====================================================================================================")
+        print(f"Saving the model: {self.full_path}")
+        torch.save(obj=trained_model.state_dict(), f=self.full_path)
+
+    def load_model(self, trained_model):
+        trained_model.load_state_dict(torch.load(self.full_path, weights_only=True))
+        return trained_model
+    
 def main():    
     model = LeNet5()
     summary(model=model, input_size=(1, 1, 28, 28), col_width=20,
@@ -141,16 +156,17 @@ def main():
 
     learning_model = Learning_class(model)
     trained_model, history = learning_model.train(history=True)
+    learning_model.save_model(trained_model)
     learning_model.plot_accuracy(history)
     learning_model.plot_loss(history)
 
-    kernels3 = trained_model.convolution_layer3[0].weight.detach().clone()
-    kernels3 = kernels3 - kernels3.min()
-    kernels3 = kernels3 / kernels3.max()
-    kernels3,_ = torch.max(kernels3, 1, keepdim=True)
-    filter_img = utils.make_grid(kernels3, nrow = 12)
-    img = transforms.ToPILImage()(filter_img) 
-    img = utils.save_image(filter_img, 'encoder_conv1_filters.png' ,nrow = 12)   
+    trained_model.to(dev)
+    input_image = model.test_set[1][0].unsqueeze(0) 
+    input_image = input_image.to(dev)
+    input_class = torch.argmax(trained_model(input_image)[0].unsqueeze(0)[0])
+    print("predicted number:", input_class)
+    plt.imshow(input_image.cpu().numpy().squeeze((0,1)), cmap='binary', aspect='auto') 
+    plt.show()
 
 if __name__ == '__main__':
     main()
