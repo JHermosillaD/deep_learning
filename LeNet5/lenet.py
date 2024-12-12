@@ -19,11 +19,11 @@ class LeNet5(nn.Module):
         self.batch_size = 64
         self.train_set = datasets.MNIST(root='./',
                                         train=True,
-                                        download=True,
+                                        download=False,
                                         transform=transforms.Compose([transforms.ToTensor()]))
         self.test_set  = datasets.MNIST(root='./',
                                         train=False,
-                                        download=True,
+                                        download=False,
                                         transform=transforms.Compose([transforms.ToTensor()]))
         self.train_loader = torch.utils.data.DataLoader(dataset=self.train_set,
                                                         batch_size=self.batch_size,
